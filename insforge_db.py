@@ -6,19 +6,23 @@ from utils.logger import logger
 # Load the InsForge project config to get the REST URL and API key
 config_path = os.path.join(os.path.dirname(__file__), '.insforge', 'project.json')
 
-API_URL = None
-API_KEY = None
+API_URL = os.getenv("INSFORGE_URL")
+API_KEY = os.getenv("INSFORGE_KEY")
 
-try:
-    with open(config_path, 'r') as f:
-        insforge_config = json.load(f)
-        # Construct the PostgREST table URL
-        API_URL = insforge_config.get('oss_host') + '/rest/v1/moving_leads'
-        API_KEY = insforge_config.get('api_key')
-except FileNotFoundError:
-    logger.error("Could not find .insforge/project.json file. Run 'npx @insforge/cli link' first.")
-except Exception as e:
-    logger.error(f"Error reading InsForge config: {e}")
+if API_URL:
+    API_URL = f"{API_URL}/rest/v1/moving_leads"
+
+if not API_URL or not API_KEY:
+    try:
+        with open(config_path, 'r') as f:
+            insforge_config = json.load(f)
+            # Construct the PostgREST table URL
+            API_URL = insforge_config.get('oss_host') + '/rest/v1/moving_leads'
+            API_KEY = insforge_config.get('api_key')
+    except FileNotFoundError:
+        logger.error("Could not find .insforge/project.json file or keys in Env.")
+    except Exception as e:
+        logger.error(f"Error reading InsForge config: {e}")
 
 def save_to_insforge(lead, qualification):
     """
