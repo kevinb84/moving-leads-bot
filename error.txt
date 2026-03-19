@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "C:\Users\Aji4r\OneDrive\Desktop\lead\main.py", line 8, in <module>
+    from scraper_facebook import scrape_facebook_public
+  File "C:\Users\Aji4r\OneDrive\Desktop\lead\scraper_facebook.py", line 2, in <module>
+    from utils.browser import get_browser_context, random_delay, human_move
+  File "C:\Users\Aji4r\OneDrive\Desktop\lead\utils\browser.py", line 2, in <module>
+    from playwright_stealth import stealth_sync
+ImportError: cannot import name 'stealth_sync' from 'playwright_stealth' (C:\Users\Aji4r\AppData\Roaming\Python\Python314\site-packages\playwright_stealth\__init__.py)

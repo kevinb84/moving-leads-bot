@@ -1,0 +1,25 @@
+﻿[
+  {
+    "id": "60618608-af52-42b2-a46d-e16400664f62",
+    "providerDeploymentId": "dpl_48jr16ugtWXtPm3M4AWUcJzzYasx",
+    "provider": "vercel",
+    "status": "READY",
+    "url": "https://58izx8nr.insforge.site",
+    "metadata": {
+      "target": "production",
+      "fileCount": 4,
+      "projectId": "prj_nn5uRIrYPJOVFDamujttMEfS4DcR",
+      "startedAt": "2026-03-19T08:24:06.088Z",
+      "envVarKeys": [
+        "VITE_INSFORGE_BASE_URL",
+        "VITE_INSFORGE_ANON_KEY"
+      ],
+      "vercelName": "deployment",
+      "lastWebhookAt": "2026-03-19T08:24:10.274Z",
+      "webhookEventId": "demxYL_iBRJM5BgsSPYOo",
+      "webhookEventType": "deployment.succeeded"
+    },
+    "createdAt": "2026-03-19T08:24:02.209Z",
+    "updatedAt": "2026-03-19T08:24:10.276Z"
+  }
+]
