@@ -33,11 +33,12 @@ def job():
     except Exception as e:
         logger.error(f"FB scraping failed: {e}")
 
-    try:
-        bark_leads = scrape_bark_listings()
-        all_raw_leads.extend(bark_leads)
-    except Exception as e:
-        logger.error(f"Bark scraping failed: {e}")
+    # Bark is currently disabled due to 403 Forbidden Cloudflare blocks
+    # try:
+    #     bark_leads = scrape_bark_listings()
+    #     all_raw_leads.extend(bark_leads)
+    # except Exception as e:
+    #     logger.error(f"Bark scraping failed: {e}")
 
     logger.info(f"Total raw leads collected: {len(all_raw_leads)}")
 

@@ -24,8 +24,6 @@ def scrape_bark_listings():
             try:
                 logger.info(f"Scraping Bark category: {url}")
                 page.goto(url)
-                random_delay(5, 12)
-                human_move(page)
                 
                 # Bark often lists jobs in a list or grid
                 # CSS Selectors for Bark leads (based on common patterns)
@@ -36,7 +34,12 @@ def scrape_bark_listings():
                 slug = url.split('/')[-2] if url.endswith('/') else url.split('/')[-1]
                 screenshot_filename = f"logs/bark_debug_{slug}.png"
                 page.screenshot(path=screenshot_filename)
-                logger.info(f"Saved Bark debug screenshot to {screenshot_filename}")
+                
+                html_content = page.content()
+                with open(f"logs/bark_debug_{slug}.html", "w", encoding="utf-8") as f:
+                    f.write(html_content)
+                
+                logger.info(f"Saved Bark debug screenshot to {screenshot_filename} and HTML to logs/bark_debug_{slug}.html")
 
                 # Check for job cards
                 # Bark leads often have classes like 'public-lead-card' or similar in browse mode

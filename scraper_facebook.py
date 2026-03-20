@@ -15,8 +15,24 @@ FB_GROUPS = [
     "https://www.facebook.com/groups/197451927372346/",
     "https://www.facebook.com/groups/985229415745481/",
     "https://www.facebook.com/groups/732936102383065/",
+    "https://www.facebook.com/groups/291741052177433/",
+    "https://www.facebook.com/groups/894044065936686/",
+    "https://www.facebook.com/groups/housesforrentcalgary/",
+    "https://www.facebook.com/groups/750751069727344/",
     "https://www.facebook.com/groups/1404326543630054/",
-    "https://www.facebook.com/groups/482368585643644/"
+    "https://www.facebook.com/groups/482368585643644/",
+    # --- NEW EDMONTON & CALGARY GROUPS ---
+    "https://www.facebook.com/groups/edmontonbuyandsell/",
+    "https://www.facebook.com/groups/EdmontonBuySellTrade/",
+    "https://www.facebook.com/groups/edmontonrentals/",
+    "https://www.facebook.com/groups/yegbuyandsell/",
+    "https://www.facebook.com/groups/edmontoncommunity/",
+    "https://www.facebook.com/groups/yegclassified/",
+    "https://www.facebook.com/groups/yegrentals/",
+    "https://www.facebook.com/groups/Edmontonclassifieds/",
+    "https://www.facebook.com/groups/edmontonapartments/",
+    "https://www.facebook.com/groups/CalgaryHomesForRent/",
+    "https://www.facebook.com/groups/calgarycommunity/"
 ]
 
 def scrape_facebook_public():
