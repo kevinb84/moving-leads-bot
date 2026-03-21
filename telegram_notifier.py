@@ -29,7 +29,9 @@ def send_telegram_notification(lead_data, qualification):
         f"📍 <b>From:</b> {data.get('origin_neighborhood', 'Unknown')}\n"
         f"🏁 <b>To:</b> {data.get('destination_city', 'Unknown')}\n"
         f"🛠 <b>Packing:</b> {'Yes' if data.get('packing_service') else 'No'}\n\n"
-        f"📝 <b>Call Summary:</b> {data.get('call_summary', 'Unknown')}\n\n"
+        f"📝 <b>Call Summary:</b> {data.get('call_summary', 'Unknown')}\n"
+        f"💰 <b>Estimated Quote:</b> {data.get('estimated_quote', 'N/A')}\n"
+        f"💬 <b>WhatsApp Draft:</b> <i>{data.get('whatsapp_draft', 'N/A')}</i>\n\n"
         f"🔗 <a href='{lead_data.get('url', '#')}'>View Original Post</a>"
     )
 
@@ -60,6 +62,8 @@ if __name__ == "__main__":
         "destination_city": "Austin",
         "inventory_summary": "3 Bedrooms",
         "packing_service": True,
-        "call_summary": "Family relocating to Austin looking for local moving service."
+        "call_summary": "Family relocating to Austin looking for local moving service.",
+        "estimated_quote": "$450 - $600 (Based on 3 Bedrooms)",
+        "whatsapp_draft": "Hi John! I saw your post looking for movers regarding your 3 Bedroom move from Dallas to Austin. We have local expertise and can handle the heavy lifting for around $450 - $600. Let me know if you'd like to book!"
     }
     send_telegram_notification(sample_lead, sample_qual)

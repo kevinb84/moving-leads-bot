@@ -7,6 +7,10 @@ from dotenv import load_dotenv
 from utils.logger import logger
 from scraper_facebook import scrape_facebook_public
 from scraper_bark import scrape_bark_listings
+from scraper_craigslist import scrape_craigslist
+from scraper_kijiji import scrape_kijiji
+from scraper_reddit import scrape_reddit
+from scraper_nextdoor import scrape_nextdoor
 from qualifier import qualify_lead
 from sheets_handler import save_to_sheets
 from telegram_notifier import send_telegram_notification
@@ -39,6 +43,30 @@ def job():
     #     all_raw_leads.extend(bark_leads)
     # except Exception as e:
     #     logger.error(f"Bark scraping failed: {e}")
+
+    try:
+        craigslist_leads = scrape_craigslist()
+        all_raw_leads.extend(craigslist_leads)
+    except Exception as e:
+        logger.error(f"Craigslist scraping failed: {e}")
+
+    try:
+        kijiji_leads = scrape_kijiji()
+        all_raw_leads.extend(kijiji_leads)
+    except Exception as e:
+        logger.error(f"Kijiji scraping failed: {e}")
+
+    try:
+        reddit_leads = scrape_reddit()
+        all_raw_leads.extend(reddit_leads)
+    except Exception as e:
+        logger.error(f"Reddit scraping failed: {e}")
+
+    try:
+        nextdoor_leads = scrape_nextdoor()
+        all_raw_leads.extend(nextdoor_leads)
+    except Exception as e:
+        logger.error(f"Nextdoor scraping failed: {e}")
 
     logger.info(f"Total raw leads collected: {len(all_raw_leads)}")
 

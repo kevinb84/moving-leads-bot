@@ -1,6 +1,7 @@
 import os
 import requests
 import json
+import hashlib
 from utils.logger import logger
 
 # Load the InsForge project config to get the REST URL and API key
@@ -48,17 +49,20 @@ def save_to_insforge(lead, qualification):
         "inventory_summary": qualification.get("inventory_summary", ""),
         "packing_service": qualification.get("packing_service", False),
         "call_summary": qualification.get("call_summary", ""),
+        "estimated_quote": qualification.get("estimated_quote", ""),
+        "whatsapp_draft": qualification.get("whatsapp_draft", ""),
         "raw_text": lead.get("text", ""),
         "source_url": lead.get("url", ""),
+        "text_hash": hashlib.md5(lead.get("text", "").lower().strip().encode('utf-8')).hexdigest() if lead.get("text") else None,
         "is_moving_lead": qualification.get("is_moving_lead", False)
     }
     
     try:
         response = requests.post(API_URL, headers=headers, json=payload)
         
-        # If it's a conflict (23505), it means the unique URL is already in the DB
+        # If it's a conflict (23505), it means the unique URL or text_hash is already in the DB
         if response.status_code == 409:
-            logger.info("Lead already exists in InsForge Database (Duplicate URL Check passed).")
+            logger.info(f"Ghost duplicate detected! Skipping lead: {lead.get('url')} (Conflict 409)")
             return False
             
         response.raise_for_status()

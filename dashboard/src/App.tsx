@@ -32,6 +32,8 @@ interface Lead {
   raw_text: string | null;
   source_url: string;
   is_moving_lead: boolean | null;
+  estimated_quote: string | null;
+  whatsapp_draft: string | null;
   created_at: string;
   is_client: boolean | null;
 }
@@ -184,6 +186,41 @@ function App() {
               </div>
             </div>
           </div>
+
+          {/* Analytics Stats Bar */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6 pt-6 border-t border-white/5">
+            <div className="bg-neutral-800/30 rounded-xl p-4 border border-neutral-700/50 flex items-center justify-between">
+              <div>
+                <p className="text-xs text-neutral-500 font-semibold uppercase tracking-wider mb-1">Total Valid Leads</p>
+                <p className="text-2xl font-bold text-white">{leads.filter(l => l.is_moving_lead).length}</p>
+              </div>
+              <div className="h-10 w-10 rounded-full bg-indigo-500/10 flex items-center justify-center text-indigo-400">
+                <Briefcase className="w-5 h-5" />
+              </div>
+            </div>
+            <div className="bg-neutral-800/30 rounded-xl p-4 border border-neutral-700/50 flex items-center justify-between">
+              <div>
+                <p className="text-xs text-neutral-500 font-semibold uppercase tracking-wider mb-1">Conversion Win Rate</p>
+                <p className="text-2xl font-bold text-emerald-400">
+                  {leads.filter(l => l.is_moving_lead !== false).length > 0 
+                    ? ((leads.filter(l => l.is_client).length / leads.filter(l => l.is_moving_lead !== false).length) * 100).toFixed(1) 
+                    : '0.0'}%
+                </p>
+              </div>
+              <div className="h-10 w-10 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-400">
+                <CheckCircle className="w-5 h-5" />
+              </div>
+            </div>
+            <div className="bg-neutral-800/30 rounded-xl p-4 border border-neutral-700/50 flex items-center justify-between">
+              <div>
+                <p className="text-xs text-neutral-500 font-semibold uppercase tracking-wider mb-1">Total Unqualified</p>
+                <p className="text-2xl font-bold text-rose-400">{leads.filter(l => l.is_moving_lead === false).length}</p>
+              </div>
+              <div className="h-10 w-10 rounded-full bg-rose-500/10 flex items-center justify-center text-rose-400">
+                <XCircle className="w-5 h-5" />
+              </div>
+            </div>
+          </div>
         </div>
       </header>
 
@@ -279,6 +316,11 @@ function App() {
 
                   {/* Attributes */}
                   <div className="flex flex-wrap gap-2 mt-auto pt-4 border-t border-neutral-800">
+                    {lead.estimated_quote && (
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-sm font-bold text-emerald-400 w-full mb-1">
+                        💰 Estimated Quote: {lead.estimated_quote}
+                      </span>
+                    )}
                     {lead.move_date && (
                       <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-neutral-800 text-xs text-neutral-300">
                         <Calendar className="w-3 h-3 text-neutral-500" />
@@ -291,13 +333,20 @@ function App() {
                         {lead.inventory_summary}
                       </span>
                     )}
-                    {lead.phone_number && (
-                      <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-emerald-500/10 text-xs text-emerald-400">
-                        <Phone className="w-3 h-3" />
-                        {lead.phone_number}
-                      </span>
-                    )}
+
                   </div>
+                  
+                  {/* 1-Click Communication Shortcuts */}
+                  {lead.phone_number && (
+                    <div className="flex w-full items-center gap-2 mt-4 pt-4 border-t border-neutral-800/50">
+                      <a href={`https://wa.me/${lead.phone_number.replace(/\D/g, '')}${lead.whatsapp_draft ? `?text=${encodeURIComponent(lead.whatsapp_draft)}` : ''}`} target="_blank" rel="noopener noreferrer" className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 bg-[#25D366]/10 hover:bg-[#25D366]/20 text-[#25D366] rounded-xl text-sm font-bold transition-all">
+                        <MessageSquare className="w-4 h-4" /> WhatsApp Draft
+                      </a>
+                      <a href={`tel:${lead.phone_number.replace(/\D/g, '')}`} className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 bg-sky-500/10 hover:bg-sky-500/20 text-sky-500 rounded-xl text-sm font-bold transition-all">
+                        <Phone className="w-4 h-4 text-sky-400" /> Call Now
+                      </a>
+                    </div>
+                  )}
                 </div>
 
                 {/* Card Footer */}

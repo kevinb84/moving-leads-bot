@@ -33,6 +33,8 @@ Extract the following fields from the lead:
 - inventory_summary (e.g., "Family relocating and searching for housing" or "1-bedroom apartment move")
 - packing_service (boolean, true if they need packing/unpacking help)
 - call_summary (A 1-2 sentence summary of their post/request)
+- estimated_quote (Based on the items/inventory mentioned, give a rough local price estimate. E.g., "$300 - $450" or "Requires evaluation". Assume Calgary local rates around $120-$150/hr for 2 movers)
+- whatsapp_draft (A flawlessly polite and friendly first-touch text message greeting introducing your moving company, referencing their specific items/locations, and offering the estimated quote. Keep it concise, no emojis overload)
 
 Return EXCLUSIVELY a JSON object with this EXACT structure (use true/false for booleans, empty string "" if information is missing):
 {
@@ -44,7 +46,9 @@ Return EXCLUSIVELY a JSON object with this EXACT structure (use true/false for b
   "destination_city": "string",
   "inventory_summary": "string",
   "packing_service": boolean,
-  "call_summary": "string"
+  "call_summary": "string",
+  "estimated_quote": "string",
+  "whatsapp_draft": "string"
 }
 """
 

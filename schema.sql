@@ -11,6 +11,9 @@ CREATE TABLE IF NOT EXISTS moving_leads (
     call_summary TEXT,
     raw_text TEXT,
     source_url TEXT UNIQUE,
+    text_hash TEXT UNIQUE,
+    estimated_quote TEXT,
+    whatsapp_draft TEXT,
     is_moving_lead BOOLEAN,
     created_at TIMESTAMPTZ DEFAULT now()
 );
