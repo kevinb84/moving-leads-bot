@@ -53,9 +53,11 @@ async function generateAIAd() {
         console.log("[BRAIN] Drafting post copy...");
         const chatReq = await openai.chat.completions.create({
             model: 'gpt-4o-mini',
+            temperature: 0.9,
             messages: [{
                 role: 'user', 
-                content: `Write a short, engaging Facebook Ad post for a moving company called ${BRAND.name}. The company operates in ${BRAND.locations}. The post angle should be: ${angle}. Keep it under 3 sentences, use 2-3 emojis, and end with a call to action referencing our site ${BRAND.website} or phone +1-587-968-3590.`
+                content: `Write a highly engaging, unique, non-repetitive Facebook post for ${BRAND.name}. The company operates in ${BRAND.locations}. Post angle: ${angle}. 
+                CRITICAL INSTRUCTION: DO NOT EVER start the post by saying "Hello Edmonton" or "Hello Calgary" or "Hello [City]". Make the first sentence a strong hook instead. Keep it under 3 sentences, use 2-3 emojis, and end with a call to action referencing our site ${BRAND.website} or phone +1-587-968-3590.`
             }]
         });
         const postCopy = chatReq.choices[0].message.content;
