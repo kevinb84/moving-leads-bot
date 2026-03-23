@@ -14,9 +14,10 @@ CANADIAN_USER_AGENTS = [
     "Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:109.0) Gecko/20100101 Firefox/121.0"
 ]
 
-def get_browser_context(playwright, headless=True):
+def get_browser_context(playwright, headless=True, cookies_file="cookies.json"):
     """
     Returns a browser and context with stealth and Canadian proxy settings.
+    Allows specifying a custom cookie file to isolate scraper (burner) accounts from marketing (official) accounts.
     """
     proxy_url = os.getenv("PROXY_SERVER")
     proxy_settings = None
@@ -65,8 +66,8 @@ def get_browser_context(playwright, headless=True):
         "timezone_id": "America/Edmonton"
     }
     
-    if os.path.exists("cookies.json"):
-        context_args["storage_state"] = "cookies.json"
+    if os.path.exists(cookies_file):
+        context_args["storage_state"] = cookies_file
         
     context = browser.new_context(**context_args)
     

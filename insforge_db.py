@@ -11,14 +11,14 @@ API_URL = os.getenv("INSFORGE_URL")
 API_KEY = os.getenv("INSFORGE_KEY")
 
 if API_URL:
-    API_URL = f"{API_URL}/rest/v1/moving_leads"
+    API_URL = f"{API_URL}/database/records/moving_leads"
 
 if not API_URL or not API_KEY:
     try:
         with open(config_path, 'r') as f:
             insforge_config = json.load(f)
-            # Construct the PostgREST table URL
-            API_URL = insforge_config.get('oss_host') + '/rest/v1/moving_leads'
+            # Construct the InsForge table URL
+            API_URL = insforge_config.get('oss_host') + '/database/records/moving_leads'
             API_KEY = insforge_config.get('api_key')
     except FileNotFoundError:
         logger.error("Could not find .insforge/project.json file or keys in Env.")

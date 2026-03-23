@@ -1,0 +1,70 @@
+name: Autonomous Facebook Marketing
+
+on:
+  schedule:
+    # Run once daily at 9:00 AM UTC (Matches roughly 3:00 AM Central, adjust if needed)
+    - cron: "0 9 * * *"
+  workflow_dispatch: # Allows manual trigger from GitHub UI
+
+jobs:
+  run-marketing-pipeline:
+    runs-on: ubuntu-latest
+    env:
+      FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
+      
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js (For the AI Brain)
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: dashboard/package-lock.json
+
+      - name: Install Node Dependencies
+        working-directory: ./dashboard
+        run: npm install
+
+      - name: Execute The AI Brain (Generate Ad & Asset)
+        working-directory: ./dashboard
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          VITE_INSFORGE_BASE_URL: ${{ secrets.INSFORGE_URL }}
+          VITE_INSFORGE_ANON_KEY: ${{ secrets.INSFORGE_KEY }}
+          GITHUB_ACTIONS: "true"
+        run: node cron.js
+
+      - name: Setup Python (For the Auto-Poster)
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install Python Dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt playwright
+          
+      - name: Install Playwright Browsers
+        run: playwright install chromium --with-deps
+
+      - name: Load Facebook Login Identity
+        env:
+          FB_COOKIES_JSON: ${{ secrets.FB_COOKIES_JSON }}
+        run: |
+          if [ -n "$FB_COOKIES_JSON" ]; then
+            echo "$FB_COOKIES_JSON" > cookies_marketing.json
+            echo "Successfully loaded marketing session cookies."
+          else
+            echo "FB_COOKIES_JSON secret is missing! Facebook posting will fail due to no active session."
+          fi
+
+      - name: Execute Python Marketing Worker (Distribute Post)
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          INSFORGE_URL: ${{ secrets.INSFORGE_URL }}
+          INSFORGE_KEY: ${{ secrets.INSFORGE_KEY }}
+          GITHUB_ACTIONS: "true"
+        run: python marketing_worker.py
