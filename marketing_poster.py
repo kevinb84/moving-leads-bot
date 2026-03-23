@@ -16,7 +16,8 @@ def auto_post_facebook_page(post_text, image_path=None):
     logger.info("Attempting to post to Facebook Page...")
     
     with sync_playwright() as p:
-        browser, context = get_browser_context(p, headless=False, cookies_file="cookies_marketing.json")
+        is_github = bool(os.getenv("GITHUB_ACTIONS"))
+        browser, context = get_browser_context(p, headless=is_github, cookies_file="cookies_marketing.json")
         page = context.new_page()
         
         try:
@@ -224,7 +225,8 @@ def auto_post_instagram_page(post_text, image_path):
         return False
         
     with sync_playwright() as p:
-        browser, context = get_browser_context(p, headless=False, cookies_file="cookies_marketing.json")
+        is_github = bool(os.getenv("GITHUB_ACTIONS"))
+        browser, context = get_browser_context(p, headless=is_github, cookies_file="cookies_marketing.json")
         page = context.new_page()
         
         try:
