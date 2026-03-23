@@ -13,6 +13,8 @@
     "@insforge/sdk": "^1.2.0",
     "date-fns": "^4.1.0",
     "lucide-react": "^0.577.0",
+    "node-cron": "^4.2.1",
+    "openai": "^6.32.0",
     "react": "^19.2.3",
     "react-dom": "^19.2.3"
   },

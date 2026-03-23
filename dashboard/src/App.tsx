@@ -19,6 +19,8 @@ import {
   Phone
 } from 'lucide-react';
 
+import { MarketingHub } from './components/MarketingHub';
+
 interface Lead {
   id: string;
   customer_name: string | null;
@@ -42,6 +44,13 @@ function App() {
   const [leads, setLeads] = useState<Lead[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  
+  // Navigation State
+  const [activeTab, setActiveTab] = useState<'leads' | 'marketing'>('leads');
+  
+  // Marketing State
+  const [marketingContent, setMarketingContent] = useState('');
+  const [isBroadcasting, setIsBroadcasting] = useState(false);
   
   // filtering
   const [statusFilter, setStatusFilter] = useState<string>('all');
@@ -71,6 +80,9 @@ function App() {
       if (fetchError) throw fetchError;
       
       let filteredData = (data as Lead[]) || [];
+      // Filter out our internal marketing queues so they don't render on the dashboard
+      filteredData = filteredData.filter(lead => !lead.customer_name?.includes('MARKETING_BROADCAST'));
+      
       if (searchQuery) {
         filteredData = filteredData.filter(lead => 
           (lead.raw_text && lead.raw_text.toLowerCase().includes(searchQuery.toLowerCase())) || 
@@ -112,6 +124,45 @@ function App() {
     } catch (err) {
       console.error('Failed to update lead', err);
       alert('Failed to update status. Check console.');
+    }
+  };
+
+  const handleBroadcast = async (platform: string) => {
+    if (!marketingContent.trim()) return alert('Enter ad content first!');
+    setIsBroadcasting(true);
+    try {
+      const { error } = await insforge.database.from('moving_leads').insert([{
+        customer_name: 'MARKETING_BROADCAST_PENDING',
+        source_url: `queue_marketing_${platform}_${Date.now()}`,
+        raw_text: marketingContent,
+        is_moving_lead: false,
+        text_hash: `hash_${Date.now()}` // Bypass unique constraint
+      }]);
+      if (error) throw error;
+      alert(`Successfully queued ad for ${platform.toUpperCase()}! The worker will post it shortly.`);
+      setMarketingContent('');
+    } catch (err: any) {
+      alert(err.message);
+    } finally {
+      setIsBroadcasting(false);
+    }
+  };
+
+  const handleSmartComment = async (lead: Lead) => {
+    if (!confirm('Deploy Smart Commenter to officially reply to this lead on Facebook?')) return;
+    try {
+      const { error } = await insforge.database.from('moving_leads').insert([{
+        customer_name: 'MARKETING_BROADCAST_PENDING',
+        source_url: `queue_marketing_facebook_comment_${Date.now()}`,
+        raw_text: lead.whatsapp_draft || "Hey! We are local movers and would love to help. Let us know if you still need a hand!",
+        whatsapp_draft: lead.source_url, // Store the TARGET URL inside the whatsapp draft field
+        is_moving_lead: false,
+        text_hash: `hash_comment_${Date.now()}`
+      }]);
+      if (error) throw error;
+      alert(`Smart Comment queued! The worker will reply in the thread momentarily.`);
+    } catch (err: any) {
+      alert(err.message);
     }
   };
 
@@ -158,12 +209,29 @@ function App() {
               </div>
             </div>
 
+            {/* Navigation Tabs */}
+            <div className="flex bg-neutral-800/50 p-1.5 rounded-2xl border border-neutral-700/50 shadow-inner">
+              <button 
+                onClick={() => setActiveTab('leads')}
+                className={`px-5 py-2 rounded-xl text-sm font-bold transition-all ${activeTab === 'leads' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20' : 'text-neutral-400 hover:text-white hover:bg-neutral-800/80'}`}
+              >
+                Lead Gen Pipeline
+              </button>
+              <button 
+                onClick={() => setActiveTab('marketing')}
+                className={`px-5 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${activeTab === 'marketing' ? 'bg-neutral-200 text-neutral-900 shadow-lg shadow-white/10' : 'text-neutral-400 hover:text-white hover:bg-neutral-800/80'}`}
+              >
+                Marketing Assets & Broadcast
+              </button>
+            </div>
+
             <div className="flex items-center gap-3 flex-1 md:max-w-md">
               <div className="relative flex-1 group">
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-neutral-500 group-focus-within:text-indigo-400 transition-colors" />
                 <input
                   type="text"
-                  placeholder="Search text, name, or city..."
+                  disabled={activeTab !== 'leads'}
+                  placeholder={activeTab === 'leads' ? "Search text, name, or city..." : ""}
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
                   className="w-full pl-10 pr-4 py-2.5 bg-neutral-800/50 border border-neutral-700/50 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all placeholder:text-neutral-500"
@@ -187,8 +255,9 @@ function App() {
             </div>
           </div>
 
-          {/* Analytics Stats Bar */}
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6 pt-6 border-t border-white/5">
+          {/* Analytics Stats Bar - Only show on leads tab */}
+          {activeTab === 'leads' && (
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6 pt-6 border-t border-white/5 animate-in fade-in slide-in-from-top-4 duration-500">
             <div className="bg-neutral-800/30 rounded-xl p-4 border border-neutral-700/50 flex items-center justify-between">
               <div>
                 <p className="text-xs text-neutral-500 font-semibold uppercase tracking-wider mb-1">Total Valid Leads</p>
@@ -221,13 +290,22 @@ function App() {
               </div>
             </div>
           </div>
+          )}
+
         </div>
       </header>
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-6 py-8">
         
-        {loading ? (
+        {activeTab === 'marketing' ? (
+          <MarketingHub 
+            marketingContent={marketingContent}
+            setMarketingContent={setMarketingContent}
+            handleBroadcast={handleBroadcast}
+            isBroadcasting={isBroadcasting}
+          />
+        ) : loading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-4">
             <div className="w-8 h-8 rounded-full border-2 border-indigo-500/20 border-t-indigo-500 animate-spin" />
             <p className="text-neutral-400 text-sm animate-pulse">Scanning the database...</p>
@@ -337,16 +415,23 @@ function App() {
                   </div>
                   
                   {/* 1-Click Communication Shortcuts */}
-                  {lead.phone_number && (
-                    <div className="flex w-full items-center gap-2 mt-4 pt-4 border-t border-neutral-800/50">
-                      <a href={`https://wa.me/${lead.phone_number.replace(/\D/g, '')}${lead.whatsapp_draft ? `?text=${encodeURIComponent(lead.whatsapp_draft)}` : ''}`} target="_blank" rel="noopener noreferrer" className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 bg-[#25D366]/10 hover:bg-[#25D366]/20 text-[#25D366] rounded-xl text-sm font-bold transition-all">
-                        <MessageSquare className="w-4 h-4" /> WhatsApp Draft
-                      </a>
-                      <a href={`tel:${lead.phone_number.replace(/\D/g, '')}`} className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 bg-sky-500/10 hover:bg-sky-500/20 text-sky-500 rounded-xl text-sm font-bold transition-all">
-                        <Phone className="w-4 h-4 text-sky-400" /> Call Now
-                      </a>
-                    </div>
-                  )}
+                  <div className="flex flex-col gap-2 mt-4 pt-4 border-t border-neutral-800/50">
+                    {lead.source_url.includes('facebook.com') && (
+                      <button onClick={() => handleSmartComment(lead)} className="w-full flex items-center justify-center gap-1.5 px-3 py-2.5 bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 border border-purple-500/20 rounded-xl text-sm font-bold transition-all shadow-[0_0_15px_-5px_rgba(168,85,247,0.3)]">
+                        <MessageSquare className="w-4 h-4" /> Smart Auto-Comment Reply
+                      </button>
+                    )}
+                    {lead.phone_number && (
+                      <div className="flex w-full items-center gap-2">
+                        <a href={`https://wa.me/${lead.phone_number.replace(/\D/g, '')}${lead.whatsapp_draft ? `?text=${encodeURIComponent(lead.whatsapp_draft)}` : ''}`} target="_blank" rel="noopener noreferrer" className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 bg-[#25D366]/10 hover:bg-[#25D366]/20 text-[#25D366] rounded-xl text-sm font-bold transition-all">
+                          <MessageSquare className="w-4 h-4" /> WhatsApp Draft
+                        </a>
+                        <a href={`tel:${lead.phone_number.replace(/\D/g, '')}`} className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2.5 bg-sky-500/10 hover:bg-sky-500/20 text-sky-500 rounded-xl text-sm font-bold transition-all">
+                          <Phone className="w-4 h-4 text-sky-400" /> Call Now
+                        </a>
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {/* Card Footer */}
