@@ -161,6 +161,18 @@ def auto_post_facebook_page(post_text, image_path=None):
             except Exception:
                 pass
             
+            # Clear optional "Add WhatsApp" upsell modals BEFORE posting
+            time.sleep(2)
+            try:
+                for skip_text in ["Not now", "Not Now", "Close"]:
+                    for btn in page.get_by_text(skip_text).all():
+                        if btn.is_visible():
+                            logger.info(f"Intercepted Facebook upsell modal: clicking '{skip_text}'...")
+                            btn.click(force=True, timeout=1000)
+                            time.sleep(1)
+            except Exception:
+                pass
+                
             # Click "Post" or "Publish" or "Share"
             submit_btn = None
             try:
