@@ -23,11 +23,20 @@ export function MarketingHub({
     try {
       setIsLoading(true);
       const { data, error } = await insforge.database
-        .from('marketing_assets')
-        .select('*');
+        .from('moving_leads')
+        .select('*')
+        .eq('customer_name', 'ASSET_UPLOAD');
       
       if (error) throw error;
-      setAssets((data || []) as any[]);
+      
+      // Re-map the database structure back into the Asset gallery UI logically
+      const mappedAssets = (data || []).map(item => ({
+          name: item.raw_text || item.id,
+          key: item.id,
+          url: item.whatsapp_draft,
+          size: 0
+      }));
+      setAssets(mappedAssets as MediaAsset[]);
     } catch (err: any) {
       console.error("Error fetching assets:", err.message);
     } finally {
@@ -51,11 +60,13 @@ export function MarketingHub({
         const { data: uploadData, error: uploadError } = await insforge.storage.from('marketing_assets').uploadAuto(file);
         if (uploadError) throw uploadError;
         
-        // Save the key and URL to the database
-        const { error: dbError } = await insforge.database.from('marketing_assets').insert([{
-            key: uploadData?.key,
-            url: uploadData?.url,
-            size: uploadData?.size || 0
+        // Save the key and URL securely inside the primary database instead
+        const { error: dbError } = await insforge.database.from('moving_leads').insert([{
+            customer_name: 'ASSET_UPLOAD',
+            source_url: uploadData?.key || "",
+            whatsapp_draft: uploadData?.url || "",
+            is_moving_lead: false,
+            raw_text: "vault_asset_" + Date.now() + "_" + Math.random()
         }]);
         if (dbError) throw dbError;
       }
@@ -73,11 +84,17 @@ export function MarketingHub({
     }
   };
 
-  const deleteAsset = async (key: string) => {
+  const deleteAsset = async (asset: any) => {
     if (!confirm("Delete this memory? It won't be used for marketing posts anymore.")) return;
     try {
-      await insforge.storage.from('marketing_assets').remove(key);
-      await insforge.database.from('marketing_assets').delete().eq('key', key);
+      // Find the original key that we packed inside source_url
+      const { data } = await insforge.database.from('moving_leads').select('source_url').eq('id', asset.key || asset.id).limit(1);
+      const originalKey = data?.[0]?.source_url;
+      
+      if (originalKey) {
+          await insforge.storage.from('marketing_assets').remove(originalKey);
+      }
+      await insforge.database.from('moving_leads').delete().eq('id', asset.key || asset.id);
       await fetchAssets();
     } catch (err: any) {
       alert("Failed to delete asset: " + err.message);
@@ -184,7 +201,7 @@ export function MarketingHub({
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-black/20 opacity-0 group-hover:opacity-100 transition-opacity flex flex-col justify-between p-3">
                     <div className="flex justify-end">
                       <button 
-                        onClick={() => deleteAsset(asset.key)}
+                        onClick={() => deleteAsset(asset)}
                         className="bg-black/50 hover:bg-rose-500 backdrop-blur text-white p-2 rounded-lg transition-colors shadow-xl"
                       >
                         <Trash2 className="w-4 h-4" />

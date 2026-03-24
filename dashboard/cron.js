@@ -28,22 +28,33 @@ const openai = new OpenAI({
     apiKey: process.env.OPENAI_API_KEY
 });
 
+import fs from 'fs';
+
 // Brand Identity Configuration
 const BRAND = {
     name: "QuickMove Solutions",
     locations: "Calgary, Edmonton, Strathmore",
     website: "https://quickmovesolution.com", 
     colors: ["Vibrant Orange", "Black", "White"],
-    focus: "Professional Packing, Experienced Movers, Piano & Artwork Moving, Smart Route Planning, Insurance."
 };
 
 async function generateAIAd() {
     console.log(`\n--- [BRAIN] Generating AI Image and Copy for ${BRAND.name} ---`);
     try {
+        // Load the external Business Knowledge document
+        const knowledgePath = path.resolve(__dirname, 'brand_knowledge.txt');
+        let brandKnowledge = "";
+        try {
+            brandKnowledge = fs.readFileSync(knowledgePath, 'utf-8');
+            console.log("[BRAIN] Successfully read the brand_knowledge.txt file!");
+        } catch(e) {
+            console.warn("[BRAIN] Missing brand_knowledge.txt file, running on generic internal defaults...");
+        }
+
         // 1. Roll a dice to decide the marketing angle
         const angles = [
-            `Highlight our expertise in moving delicate items like Pianos and Artwork in Calgary.`,
-            `Focus on our stress-free residential moving services across Alberta.`,
+            `Highlight our expertise in moving delicate items like Pianos and Artwork.`,
+            `Focus on our stress-free residential moving services.`,
             `Emphasize our corporate office relocation efficiency.`,
             `Promote our fast packing and wrapping services.`
         ];
@@ -54,10 +65,14 @@ async function generateAIAd() {
         const chatReq = await openai.chat.completions.create({
             model: 'gpt-4o-mini',
             temperature: 0.9,
-            messages: [{
+            messages: [
+            {
+                role: 'system',
+                content: `You are QuickMove Solutions' elite Social Media Director. You are writing engaging, extremely persuasive marketing copy for Facebook.\n\nREAD THIS COMPREHENSIVE BRAND KNOWLEDGE BASE DO NOT HALLUCINATE OUTSIDE OF THIS:\n${brandKnowledge}\n\nCRITICAL RULE: DO NOT EVER start the post by saying "Hello Edmonton" or "Hello Calgary" or "Hello [City]". Make the first sentence a strong hook instead. Keep the post under 3 to 4 sentences, use 2-4 emojis appropriately.`
+            },
+            {
                 role: 'user', 
-                content: `Write a highly engaging, unique, non-repetitive Facebook post for ${BRAND.name}. The company operates in ${BRAND.locations}. Post angle: ${angle}. 
-                CRITICAL INSTRUCTION: DO NOT EVER start the post by saying "Hello Edmonton" or "Hello Calgary" or "Hello [City]". Make the first sentence a strong hook instead. Keep it under 3 sentences, use 2-3 emojis, and end with a call to action referencing our site ${BRAND.website} or phone +1-587-968-3590.`
+                content: `Write a highly engaging, unique, non-repetitive Facebook post for ${BRAND.name}. The company operates in ${BRAND.locations}. Our core angle for today's advertising campaign is: ${angle}. Make sure it includes a CTA referencing our website or phone number.`
             }]
         });
         const postCopy = chatReq.choices[0].message.content;
@@ -69,10 +84,10 @@ async function generateAIAd() {
         
         if (useRealPhoto) {
             console.log("[BRAIN] Attempting to pick a real photo from Marketing Assets Vault...");
-            const { data: assets } = await insforge.database.from('marketing_assets').select('url');
+            const { data: assets } = await insforge.database.from('moving_leads').select('whatsapp_draft').eq('customer_name', 'ASSET_UPLOAD');
             if (assets && assets.length > 0) {
                 const randomAsset = assets[Math.floor(Math.random() * assets.length)];
-                finalImageUrl = randomAsset.url;
+                finalImageUrl = randomAsset.whatsapp_draft;
                 console.log("[BRAIN] Selected Vault Photo:", finalImageUrl);
             } else {
                 console.log("[BRAIN] Vault empty! Falling back to AI Generation...");
