@@ -105,14 +105,14 @@ export function MarketingHub({
     <div className="space-y-8 animate-in fade-in slide-in-from-bottom-4 duration-500">
       
       {/* Auto Broadcast Box */}
-      <div className="bg-gradient-to-r from-indigo-500/10 to-purple-500/10 rounded-2xl p-6 border border-indigo-500/20 shadow-xl shadow-indigo-500/5 backdrop-blur-md">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="h-10 w-10 rounded-xl bg-indigo-500/20 flex flex-col items-center justify-center text-indigo-400">
-            <ExternalLink className="w-5 h-5" />
+      <div className="bg-white/5 backdrop-blur-xl rounded-3xl p-8 border border-white/10 shadow-[0_0_40px_-10px_rgba(99,102,241,0.15)]">
+        <div className="flex items-center gap-4 mb-6">
+          <div className="h-12 w-12 rounded-2xl bg-indigo-500/20 flex flex-col items-center justify-center text-indigo-400 border border-indigo-500/30">
+            <ExternalLink className="w-6 h-6" />
           </div>
           <div>
-            <h2 className="text-xl font-bold text-white tracking-tight">AI Broadcast Hub</h2>
-            <p className="text-sm text-indigo-200/80">Write your official localized promo below, and instantly push it to your connected platforms.</p>
+            <h2 className="text-2xl font-display font-bold text-white tracking-tight">AI Broadcast Hub</h2>
+            <p className="text-sm text-neutral-400 mt-1">Write your official localized promo below, and instantly push it to your connected platforms.</p>
           </div>
         </div>
         
@@ -120,38 +120,38 @@ export function MarketingHub({
           value={marketingContent}
           onChange={(e) => setMarketingContent(e.target.value)}
           placeholder="Example: Need Calgary movers this weekend? We have a truck available! 🚚 Call us today for 10% off local moves! #yyc #calgarymovers"
-          className="w-full h-28 bg-neutral-900 border border-indigo-500/20 rounded-xl p-4 text-sm text-neutral-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 resize-none mb-4 placeholder:text-neutral-600 shadow-inner"
+          className="w-full h-32 bg-black/40 border border-white/10 rounded-2xl p-5 text-sm text-neutral-200 focus:outline-none focus:ring-2 focus:ring-indigo-500/50 resize-none mb-6 placeholder:text-neutral-600 shadow-inner backdrop-blur-md transition-all"
         />
         
-        <div className="flex flex-wrap gap-3">
+        <div className="flex flex-wrap gap-4">
           <button 
             onClick={() => handleBroadcast('facebook_page')}
             disabled={isBroadcasting}
-            className="px-6 py-2.5 bg-[#1877F2]/10 hover:bg-[#1877F2]/20 border border-[#1877F2]/30 text-[#1877F2] text-sm font-bold rounded-xl transition-all disabled:opacity-50"
+            className="px-6 py-3 bg-[#1877F2]/10 hover:bg-[#1877F2]/20 border border-[#1877F2]/30 text-[#1877F2] text-sm font-bold rounded-xl transition-all disabled:opacity-50 flex items-center gap-2"
           >
-            {isBroadcasting ? <Loader2 className="w-4 h-4 animate-spin inline mr-2" /> : null} Broadcast to FB Page
+            {isBroadcasting ? <Loader2 className="w-4 h-4 animate-spin" /> : null} Broadcast to FB Page
           </button>
           <button 
             onClick={() => handleBroadcast('instagram')}
             disabled={isBroadcasting}
-            className="px-6 py-2.5 bg-gradient-to-r from-[#833AB4]/10 via-[#FD1D1D]/10 to-[#F56040]/10 border border-[#E1306C]/30 text-[#E1306C] text-sm font-bold rounded-xl hover:opacity-80 transition-all disabled:opacity-50 shadow-lg"
+            className="px-6 py-3 bg-gradient-to-r from-[#833AB4]/20 via-[#FD1D1D]/20 to-[#F56040]/20 border border-[#E1306C]/40 text-[#E1306C] text-sm font-bold rounded-xl hover:opacity-80 transition-all disabled:opacity-50 shadow-lg flex items-center gap-2"
           >
-            {isBroadcasting ? <Loader2 className="w-4 h-4 animate-spin inline mr-2" /> : null} Broadcast to Instagram
+            {isBroadcasting ? <Loader2 className="w-4 h-4 animate-spin" /> : null} Broadcast to Instagram
           </button>
         </div>
       </div>
 
       {/* Corporate Memories / Media Library */}
-      <div className="bg-neutral-900 border border-neutral-800 rounded-2xl overflow-hidden shadow-2xl">
-        <div className="p-6 border-b border-neutral-800">
+      <div className="bg-white/5 backdrop-blur-xl border border-white/10 rounded-3xl overflow-hidden shadow-2xl">
+        <div className="p-6 border-b border-white/5 bg-black/40">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 flex items-center justify-center rounded-xl bg-orange-500/10 shadow-lg shadow-orange-500/10">
-                <ImageIcon className="h-5 w-5 text-orange-500" />
+            <div className="flex items-center gap-4">
+              <div className="h-12 w-12 flex items-center justify-center rounded-2xl bg-orange-500/20 border border-orange-500/30 shadow-[0_0_30px_-5px_rgba(249,115,22,0.3)]">
+                <ImageIcon className="h-6 w-6 text-orange-400" />
               </div>
               <div>
-                <h2 className="text-xl font-bold text-white tracking-tight">Marketing Assets & Memories</h2>
-                <p className="text-sm text-neutral-400">Upload raw photos & videos of your team moving furniture. The AI will curate these alongside generated brand art when forming daily posts.</p>
+                <h2 className="text-2xl font-display font-bold text-white tracking-tight">Marketing Assets & Memories</h2>
+                <p className="text-sm text-neutral-400 mt-1">Upload raw photos & videos. The AI will curate these alongside generated brand art.</p>
               </div>
             </div>
 
@@ -162,9 +162,9 @@ export function MarketingHub({
                 accept="image/*,video/*"
                 onChange={handleUpload}
                 disabled={isUploading}
-                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed" 
+                className="absolute inset-0 w-full h-full opacity-0 cursor-pointer disabled:cursor-not-allowed z-20" 
               />
-              <button disabled={isUploading} className="pointer-events-none px-6 py-2.5 bg-white hover:bg-neutral-200 text-black font-bold rounded-xl text-sm transition-all flex items-center gap-2 group-disabled:opacity-50">
+              <button disabled={isUploading} className="pointer-events-none px-6 py-3 bg-white hover:bg-neutral-200 text-black font-bold rounded-xl text-sm transition-all flex items-center gap-2 group-disabled:opacity-50 relative z-10">
                 {isUploading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Upload className="w-4 h-4" />} 
                 {isUploading ? "Uploading..." : "Upload New Memory"}
               </button>
@@ -173,24 +173,24 @@ export function MarketingHub({
         </div>
 
         {/* Gallery */}
-        <div className="p-6 bg-neutral-950/50 min-h-[300px]">
+        <div className="p-8 bg-black/20 min-h-[300px]">
           {isLoading ? (
             <div className="flex flex-col items-center justify-center py-20 gap-4">
-              <Loader2 className="w-8 h-8 text-neutral-600 animate-spin" />
-              <p className="text-neutral-500 text-sm animate-pulse">Scanning the Vault...</p>
+              <Loader2 className="w-8 h-8 text-neutral-500 animate-spin" />
+              <p className="text-neutral-500 text-sm animate-pulse font-medium">Scanning the Vault...</p>
             </div>
           ) : assets.length === 0 ? (
-            <div className="flex flex-col flex-1 h-full items-center justify-center py-20 text-center border-2 border-dashed border-neutral-800 rounded-2xl">
-              <div className="h-16 w-16 bg-neutral-900 rounded-2xl flex items-center justify-center mb-4 border border-neutral-800">
-                <ImageIcon className="h-8 w-8 text-neutral-600" />
+            <div className="flex flex-col flex-1 h-full items-center justify-center py-20 text-center border-2 border-dashed border-white/10 rounded-2xl bg-white/5 backdrop-blur-sm">
+              <div className="h-16 w-16 bg-black/40 rounded-2xl flex items-center justify-center mb-4 border border-white/10">
+                <ImageIcon className="h-8 w-8 text-neutral-500" />
               </div>
-              <h3 className="text-lg font-bold text-neutral-300">Your Vault is Empty</h3>
+              <h3 className="text-xl font-display font-bold text-neutral-300">Your Vault is Empty</h3>
               <p className="text-sm text-neutral-500 mt-2 max-w-sm">Drag and drop photos or videos of your moving trucks here to let the AI feature them in future marketing broadcasts.</p>
             </div>
           ) : (
-            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-6">
               {assets.map((asset: any) => (
-                <div key={asset.key} className="group relative aspect-square bg-neutral-900 border border-neutral-800 rounded-2xl overflow-hidden hover:border-neutral-600 transition-colors shadow-lg">
+                <div key={asset.key} className="group relative aspect-square bg-black/40 border border-white/10 rounded-2xl overflow-hidden hover:border-white/30 transition-all duration-300 shadow-xl hover:-translate-y-1">
                   <img 
                     src={asset.url} 
                     alt={asset.key}

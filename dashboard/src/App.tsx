@@ -38,6 +38,8 @@ interface Lead {
   whatsapp_draft: string | null;
   created_at: string;
   is_client: boolean | null;
+  lead_intent_score?: number;
+  pain_points?: string;
 }
 
 function App() {
@@ -56,55 +58,78 @@ function App() {
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
 
+  const [isLocalData, setIsLocalData] = useState(false);
+
   const fetchLeads = async () => {
     try {
       setLoading(true);
       setError(null);
-      let query = insforge.database
-        .from('moving_leads')
-        .select('*');
+      setIsLocalData(false);
+
+      // 1. Try fetching from InsForge
+      try {
+        let query = insforge.database
+          .from('moving_leads')
+          .select('*');
+          
+        if (statusFilter !== 'all') {
+          const isClient = statusFilter === 'client';
+          if (isClient) {
+            query = query.eq('is_client', true);
+          } else if (statusFilter === 'qualified') {
+            query = query.eq('is_moving_lead', true);
+          } else if (statusFilter === 'unqualified') {
+            query = query.eq('is_moving_lead', false);
+          }
+        }
+
+        const { data, error: fetchError } = await query;
+
+        if (fetchError) throw fetchError;
         
-      if (statusFilter !== 'all') {
-        const isClient = statusFilter === 'client';
-        if (isClient) {
-          query = query.eq('is_client', true);
-        } else if (statusFilter === 'qualified') {
-          query = query.eq('is_moving_lead', true);
-        } else if (statusFilter === 'unqualified') {
-          query = query.eq('is_moving_lead', false);
+        let filteredData = (data as Lead[]) || [];
+        // Filter out our internal marketing queues so they don't render on the dashboard
+        filteredData = filteredData.filter(lead => !lead.customer_name?.includes('MARKETING_BROADCAST'));
+        
+        processAndSetLeads(filteredData);
+      } catch (insforgeErr) {
+        console.warn('InsForge connection failed, trying local fallback...', insforgeErr);
+        // 2. Fallback to local leads.json
+        const response = await fetch('/leads.json');
+        if (response.ok) {
+          const localData = await response.json();
+          setIsLocalData(true);
+          processAndSetLeads(localData);
+        } else {
+          throw insforgeErr; // Re-throw original error if local fallback also fails
         }
       }
-
-      const { data, error: fetchError } = await query;
-
-      if (fetchError) throw fetchError;
-      
-      let filteredData = (data as Lead[]) || [];
-      // Filter out our internal marketing queues so they don't render on the dashboard
-      filteredData = filteredData.filter(lead => !lead.customer_name?.includes('MARKETING_BROADCAST'));
-      
-      if (searchQuery) {
-        filteredData = filteredData.filter(lead => 
-          (lead.raw_text && lead.raw_text.toLowerCase().includes(searchQuery.toLowerCase())) || 
-          (lead.destination_city && lead.destination_city.toLowerCase().includes(searchQuery.toLowerCase())) ||
-          (lead.customer_name && lead.customer_name.toLowerCase().includes(searchQuery.toLowerCase()))
-        );
-      }
-      
-      // Sort by created_at descending
-      filteredData.sort((a, b) => {
-          const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
-          const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
-          return dateB - dateA;
-      });
-
-      setLeads(filteredData);
     } catch (err: any) {
       console.error(err);
       setError(err.message || 'Failed to fetch leads');
     } finally {
       setLoading(false);
     }
+  };
+
+  const processAndSetLeads = (data: Lead[]) => {
+    let filteredData = [...data];
+    if (searchQuery) {
+      filteredData = filteredData.filter(lead => 
+        (lead.raw_text && lead.raw_text.toLowerCase().includes(searchQuery.toLowerCase())) || 
+        (lead.destination_city && lead.destination_city.toLowerCase().includes(searchQuery.toLowerCase())) ||
+        (lead.customer_name && lead.customer_name.toLowerCase().includes(searchQuery.toLowerCase()))
+      );
+    }
+    
+    // Sort by created_at descending
+    filteredData.sort((a, b) => {
+        const dateA = a.created_at ? new Date(a.created_at).getTime() : 0;
+        const dateB = b.created_at ? new Date(b.created_at).getTime() : 0;
+        return dateB - dateA;
+    });
+
+    setLeads(filteredData);
   };
 
   useEffect(() => {
@@ -192,36 +217,50 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-neutral-950 font-sans text-neutral-200 selection:bg-indigo-500/30">
+    <div className="min-h-screen bg-black font-sans text-neutral-200 selection:bg-indigo-500/30">
       
+      {/* Decorative Background Gradients */}
+      <div className="fixed inset-0 pointer-events-none overflow-hidden">
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-indigo-600/20 blur-[120px] animate-float"></div>
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-emerald-600/10 blur-[120px] animate-float" style={{ animationDelay: '3s' }}></div>
+      </div>
+
       {/* Header Area */}
-      <header className="sticky top-0 z-50 bg-neutral-900/80 backdrop-blur-xl border-b border-white/10 shadow-2xl">
-        <div className="max-w-7xl mx-auto px-6 py-4">
+      <header className="sticky top-0 z-50 bg-black/60 backdrop-blur-xl border-b border-white/10 shadow-2xl">
+        <div className="max-w-7xl mx-auto px-6 py-4 relative">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             
-            <div className="flex items-center gap-3">
-              <div className="h-10 w-10 flex items-center justify-center rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 shadow-lg shadow-indigo-500/20">
-                <Truck className="h-5 w-5 text-white" />
+            <div className="flex items-center gap-4">
+              <div className="h-12 w-12 flex items-center justify-center rounded-2xl bg-white/5 border border-white/10 shadow-[0_0_30px_-5px_rgba(99,102,241,0.3)] backdrop-blur-md relative overflow-hidden">
+                <div className="absolute inset-0 bg-gradient-to-br from-indigo-500/50 to-purple-600/50"></div>
+                <Truck className="h-6 w-6 text-white relative z-10" />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-white tracking-tight">Moving Leads Hub</h1>
-                <p className="text-xs text-neutral-400 font-medium">AI-Qualified Opportunities</p>
+                <h1 className="text-2xl font-display font-bold text-transparent bg-clip-text bg-gradient-to-r from-white to-neutral-400 tracking-tight">Moving Leads Hub</h1>
+                <div className="flex items-center gap-2 mt-0.5">
+                  <p className="text-xs text-indigo-300/80 font-medium tracking-wide uppercase">AI-Qualified Opportunities</p>
+                  {isLocalData && (
+                    <span className="px-1.5 py-0.5 rounded-md bg-amber-500/10 text-amber-500 border border-amber-500/20 text-[10px] font-bold uppercase tracking-wider">
+                      Local Offline Mode
+                    </span>
+                  )}
+                </div>
               </div>
             </div>
 
             {/* Navigation Tabs */}
-            <div className="flex bg-neutral-800/50 p-1.5 rounded-2xl border border-neutral-700/50 shadow-inner">
+            <div className="flex bg-white/5 p-1 rounded-2xl border border-white/10 shadow-inner backdrop-blur-md">
               <button 
                 onClick={() => setActiveTab('leads')}
-                className={`px-5 py-2 rounded-xl text-sm font-bold transition-all ${activeTab === 'leads' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20' : 'text-neutral-400 hover:text-white hover:bg-neutral-800/80'}`}
+                className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all ${activeTab === 'leads' ? 'bg-indigo-500 text-white shadow-[0_0_20px_-5px_rgba(99,102,241,0.5)]' : 'text-neutral-400 hover:text-white hover:bg-white/5'}`}
               >
                 Lead Gen Pipeline
               </button>
               <button 
                 onClick={() => setActiveTab('marketing')}
-                className={`px-5 py-2 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${activeTab === 'marketing' ? 'bg-neutral-200 text-neutral-900 shadow-lg shadow-white/10' : 'text-neutral-400 hover:text-white hover:bg-neutral-800/80'}`}
+                className={`px-6 py-2.5 rounded-xl text-sm font-bold transition-all flex items-center gap-2 ${activeTab === 'marketing' ? 'bg-white text-black shadow-[0_0_20px_-5px_rgba(255,255,255,0.5)]' : 'text-neutral-400 hover:text-white hover:bg-white/5'}`}
               >
-                Marketing Assets & Broadcast
+                Marketing Assets
               </button>
             </div>
 
@@ -255,37 +294,37 @@ function App() {
             </div>
           </div>
 
-          {/* Analytics Stats Bar - Only show on leads tab */}
+          {/* Analytics Stats Bar */}
           {activeTab === 'leads' && (
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-6 pt-6 border-t border-white/5 animate-in fade-in slide-in-from-top-4 duration-500">
-            <div className="bg-neutral-800/30 rounded-xl p-4 border border-neutral-700/50 flex items-center justify-between">
+            <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-5 border border-white/10 flex items-center justify-between group hover:border-indigo-500/50 transition-colors">
               <div>
-                <p className="text-xs text-neutral-500 font-semibold uppercase tracking-wider mb-1">Total Valid Leads</p>
-                <p className="text-2xl font-bold text-white">{leads.filter(l => l.is_moving_lead).length}</p>
+                <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-widest mb-1">Total Valid Leads</p>
+                <p className="text-3xl font-display font-bold text-white group-hover:text-indigo-400 transition-colors">{leads.filter(l => l.is_moving_lead).length}</p>
               </div>
-              <div className="h-10 w-10 rounded-full bg-indigo-500/10 flex items-center justify-center text-indigo-400">
+              <div className="h-12 w-12 rounded-full bg-indigo-500/10 flex items-center justify-center text-indigo-400 border border-indigo-500/20">
                 <Briefcase className="w-5 h-5" />
               </div>
             </div>
-            <div className="bg-neutral-800/30 rounded-xl p-4 border border-neutral-700/50 flex items-center justify-between">
+            <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-5 border border-white/10 flex items-center justify-between group hover:border-emerald-500/50 transition-colors">
               <div>
-                <p className="text-xs text-neutral-500 font-semibold uppercase tracking-wider mb-1">Conversion Win Rate</p>
-                <p className="text-2xl font-bold text-emerald-400">
+                <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-widest mb-1">Conversion Win Rate</p>
+                <p className="text-3xl font-display font-bold text-emerald-400">
                   {leads.filter(l => l.is_moving_lead !== false).length > 0 
                     ? ((leads.filter(l => l.is_client).length / leads.filter(l => l.is_moving_lead !== false).length) * 100).toFixed(1) 
                     : '0.0'}%
                 </p>
               </div>
-              <div className="h-10 w-10 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-400">
+              <div className="h-12 w-12 rounded-full bg-emerald-500/10 flex items-center justify-center text-emerald-400 border border-emerald-500/20">
                 <CheckCircle className="w-5 h-5" />
               </div>
             </div>
-            <div className="bg-neutral-800/30 rounded-xl p-4 border border-neutral-700/50 flex items-center justify-between">
+            <div className="bg-white/5 backdrop-blur-xl rounded-2xl p-5 border border-white/10 flex items-center justify-between group hover:border-rose-500/50 transition-colors">
               <div>
-                <p className="text-xs text-neutral-500 font-semibold uppercase tracking-wider mb-1">Total Unqualified</p>
-                <p className="text-2xl font-bold text-rose-400">{leads.filter(l => l.is_moving_lead === false).length}</p>
+                <p className="text-[10px] text-neutral-400 font-bold uppercase tracking-widest mb-1">Total Unqualified</p>
+                <p className="text-3xl font-display font-bold text-rose-400">{leads.filter(l => l.is_moving_lead === false).length}</p>
               </div>
-              <div className="h-10 w-10 rounded-full bg-rose-500/10 flex items-center justify-center text-rose-400">
+              <div className="h-12 w-12 rounded-full bg-rose-500/10 flex items-center justify-center text-rose-400 border border-rose-500/20">
                 <XCircle className="w-5 h-5" />
               </div>
             </div>
@@ -345,29 +384,29 @@ function App() {
             {leads.map(lead => (
               <div 
                 key={lead.id} 
-                className={`group relative flex flex-col bg-neutral-900 border ${lead.is_client ? 'border-emerald-500/30 shadow-[0_0_20px_-5px_rgba(16,185,129,0.15)]' : 'border-neutral-800'} rounded-3xl overflow-hidden hover:border-neutral-700 transition-all duration-300`}
+                className={`group relative flex flex-col bg-white/5 backdrop-blur-md border ${lead.is_client ? 'border-emerald-500/50 shadow-[0_0_30px_-5px_rgba(16,185,129,0.2)]' : 'border-white/10'} rounded-3xl overflow-hidden hover:border-white/20 transition-all duration-500 hover:-translate-y-1 hover:shadow-2xl z-10`}
               >
                 
                 {/* Card Header */}
-                <div className="p-5 border-b border-neutral-800/80 bg-neutral-800/20">
-                  <div className="flex justify-between items-start mb-4">
+                <div className="p-6 border-b border-white/5 bg-gradient-to-b from-white/5 to-transparent relative overflow-hidden">
+                  <div className="flex justify-between items-start mb-5">
                     {getStatusBadge(lead.is_moving_lead)}
-                    <span className="text-xs font-medium text-neutral-500 flex items-center gap-1.5">
-                      <Clock className="w-3.5 h-3.5" />
+                    <span className="text-[10px] font-bold text-neutral-500 uppercase tracking-wider flex items-center gap-1.5 bg-black/40 px-2 py-1 rounded-md">
+                      <Clock className="w-3 h-3" />
                       {lead.created_at ? formatDistanceToNow(parseISO(lead.created_at), { addSuffix: true }) : 'Unknown'}
                     </span>
                   </div>
                   
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 flex items-center justify-center rounded-full bg-neutral-800 overflow-hidden shrink-0">
-                      <span className="font-bold text-neutral-400 text-sm">FB</span>
+                  <div className="flex items-center gap-4 relative z-10">
+                    <div className="h-12 w-12 flex items-center justify-center rounded-2xl bg-white/10 border border-white/10 shadow-inner shrink-0">
+                      <span className="font-display font-bold text-white text-lg">{(lead.customer_name || 'U')[0].toUpperCase()}</span>
                     </div>
                     <div className="overflow-hidden">
-                      <h3 className="font-bold text-white text-base leading-tight w-full truncate" title={lead.customer_name || 'Unknown Potential Client'}>
+                      <h3 className="font-display font-bold text-white text-xl leading-tight w-full truncate tracking-tight" title={lead.customer_name || 'Unknown Potential Client'}>
                         {lead.customer_name || 'Unknown Potential Client'}
                       </h3>
-                      <div className="text-xs text-neutral-400 flex items-center gap-1.5 mt-1 truncate">
-                        <MapPin className="w-3 h-3 shrink-0" />
+                      <div className="text-xs text-neutral-400 font-medium flex items-center gap-1.5 mt-1.5 truncate">
+                        <MapPin className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
                         <span className="truncate">{lead.origin_neighborhood ? `${lead.origin_neighborhood} → ` : ''}{lead.destination_city || 'Unknown Location'}</span>
                       </div>
                     </div>
@@ -377,6 +416,33 @@ function App() {
                 {/* Card Body */}
                 <div className="p-5 flex-1 flex flex-col">
                   {/* Notes / Reasonings */}
+                  {lead.lead_intent_score && (
+                    <div className="mb-4 flex items-center justify-between">
+                      <div className="flex items-center gap-1.5 overflow-hidden">
+                        <span className="text-xs font-bold text-neutral-500 uppercase tracking-widest shrink-0">Priority Score:</span>
+                        <div className="flex gap-0.5">
+                          {[...Array(10)].map((_, i) => (
+                            <div 
+                              key={i} 
+                              className={`h-1.5 w-3 rounded-full ${i < (lead.lead_intent_score || 0) ? (lead.lead_intent_score || 0) > 7 ? 'bg-indigo-500' : 'bg-emerald-500' : 'bg-neutral-800'}`} 
+                            />
+                          ))}
+                        </div>
+                      </div>
+                      <span className={`text-[10px] font-black italic ${ (lead.lead_intent_score || 0) > 7 ? 'text-indigo-400' : 'text-emerald-400'}`}>
+                        {lead.lead_intent_score}/10
+                      </span>
+                    </div>
+                  )}
+
+                  {lead.pain_points && (
+                     <div className="mb-4 bg-rose-500/5 border border-rose-500/10 rounded-xl p-3 text-xs font-medium text-rose-200">
+                        <p className="line-clamp-2 leading-relaxed">
+                          <strong className="text-rose-400 uppercase text-[10px] tracking-tighter">🚨 PAIN POINT:</strong> {lead.pain_points}
+                        </p>
+                    </div>
+                  )}
+
                   {lead.call_summary && (
                     <div className="mb-4 bg-indigo-500/5 border border-indigo-500/10 rounded-xl p-3 text-xs font-medium text-indigo-200">
                       <p className="line-clamp-2 leading-relaxed">

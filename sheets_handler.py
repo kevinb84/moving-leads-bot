@@ -17,13 +17,31 @@ COLUMNS = [
     "Timestamp", "Post URL"
 ]
 
+import json
+
 def get_sheets_client():
-    if not os.path.exists(GOOGLE_SHEETS_JSON_PATH):
-        logger.error(f"Google Sheets credentials not found at {GOOGLE_SHEETS_JSON_PATH}")
-        return None
-    
     scope = ['https://spreadsheets.google.com/feeds', 'https://www.googleapis.com/auth/drive']
-    creds = ServiceAccountCredentials.from_json_keyfile_name(GOOGLE_SHEETS_JSON_PATH, scope)
+    creds = None
+    
+    # Try loading from Environment Variable first (for Fly.io)
+    env_creds = os.getenv("GOOGLE_SHEETS_CREDENTIALS_JSON")
+    if env_creds:
+        try:
+            creds_dict = json.loads(env_creds)
+            creds = ServiceAccountCredentials.from_json_keyfile_dict(creds_dict, scope)
+            logger.info("Loaded Google Sheets credentials from Environment Variable.")
+        except Exception as e:
+            logger.error(f"Failed to parse GOOGLE_SHEETS_CREDENTIALS_JSON: {e}")
+            
+    # Fallback to local file
+    if not creds:
+        if os.path.exists(GOOGLE_SHEETS_JSON_PATH):
+            creds = ServiceAccountCredentials.from_json_keyfile_name(GOOGLE_SHEETS_JSON_PATH, scope)
+            logger.info(f"Loaded Google Sheets credentials from {GOOGLE_SHEETS_JSON_PATH}.")
+        else:
+            logger.error(f"Google Sheets credentials not found at {GOOGLE_SHEETS_JSON_PATH} or in Environment.")
+            return None
+            
     client = gspread.authorize(creds)
     return client
 

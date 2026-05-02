@@ -1,0 +1,12 @@
+app = "moving-leads-bot"
+primary_region = "yyz"
+
+[build]
+  dockerfile = "Dockerfile"
+
+[mounts]
+  source = "lead_data"
+  destination = "/app/data"
+
+[env]
+  PROCESSED_URLS_FILE_OVERRIDE = "/app/data/processed_urls.json"
