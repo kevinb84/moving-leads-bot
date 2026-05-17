@@ -48,13 +48,33 @@ def scrape_facebook_public():
         
         for group_url in FB_GROUPS:
             try:
-                # Navigating to the raw group URL without query parameters to prevent "Not Available" errors
-                url = group_url
+                # Force chronological sorting so we get recent leads, not ancient popular posts
+                if "?" in group_url:
+                    url = group_url + "&sorting_setting=CHRONOLOGICAL"
+                else:
+                    base_url = group_url
+                    if base_url.endswith('/'):
+                        base_url = base_url[:-1]
+                    url = base_url + "/?sorting_setting=CHRONOLOGICAL"
+                    
                 logger.info(f"Scraping Facebook Group: {group_url}")
                 
                 page.goto(url)
                 random_delay(5, 10)
                 human_move(page)
+                
+                # Check if logged out (Facebook login wall)
+                is_logged_out = False
+                if "login" in page.url:
+                    is_logged_out = True
+                elif page.locator('input[name="email"], input[name="pass"], button[name="login"]').count() > 0:
+                    is_logged_out = True
+                elif page.locator('a:has-text("Log in"), button:has-text("Log in")').count() > 0 and page.locator('aria-label="Home"]').count() == 0:
+                    is_logged_out = True
+                
+                if is_logged_out:
+                    logger.warning("Facebook session expired or unauthenticated. Please run fb_login.py to update cookies.")
+                    return leads
                 
                 # Scroll a bit to load more group posts
                 for _ in range(4):
@@ -86,7 +106,8 @@ def scrape_facebook_public():
                             
                         # Basic pre-filter: text must contain moving-related keywords
                         lower_text = text_content.lower()
-                        if any(kw in lower_text for kw in ["mover", "moving", "truck", "load", "pack", "recommendation"]):
+                        keywords = ["mover", "moving", "truck", "load", "pack", "recommendation", "relocating", "u-haul", "boxes", "unloading"]
+                        if any(kw in lower_text for kw in keywords):
                             leads.append({
                                 "text": text_content,
                                 "url": post_url.split('?')[0], # Strip tracking parameters

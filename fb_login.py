@@ -9,7 +9,12 @@ def login_to_facebook():
     
     with sync_playwright() as p:
         browser = p.chromium.launch(headless=False)
-        context = browser.new_context()
+        context_args = {}
+        if os.path.exists("cookies.json"):
+            # Load existing cookies (e.g. Nextdoor) so they aren't erased
+            context_args["storage_state"] = "cookies.json"
+            
+        context = browser.new_context(**context_args)
         page = context.new_page()
         
         page.goto("https://www.facebook.com/")

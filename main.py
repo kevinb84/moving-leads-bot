@@ -1,6 +1,7 @@
 import time
 import os
 import json
+import re
 from datetime import datetime
 from apscheduler.schedulers.blocking import BlockingScheduler
 from dotenv import load_dotenv
@@ -99,10 +100,24 @@ def is_competitor(text):
     competitor_keywords = [
         "licensed and insured", "best rates", "low rates", "call now for a quote",
         "professional movers", "booking now", "moving service available",
-        "our team is ready", "discount moving", "last minute specials"
+        "our team is ready", "discount moving", "last minute specials",
+        "reliable moving", "affordable moving", "truck included", "men & truck",
+        "swamper", "junk removal services", "moving services", "same day junk",
+        "we pay cash", "cash for cars", "junk car buyers"
     ]
     lower_text = text.lower()
-    return any(kw in lower_text for kw in competitor_keywords)
+    if any(kw in lower_text for kw in competitor_keywords):
+        return True
+    
+    # Check for phone number patterns in title (very common in competitor ads)
+    if re.search(r'\d{3}[-\s\.]?\d{3}[-\s\.]?\d{4}', text):
+        # But only if it also contains moving keywords (to avoid filtering out real people who leave numbers)
+        moving_kws = ["moving", "mover", "junk", "removal", "hauling", "truck"]
+        if any(kw in lower_text for kw in moving_kws):
+            # If it's a very short text with a phone number, it's likely an ad
+            if len(text) < 100:
+                return True
+    return False
 
 def is_junk_lead(text):
     """

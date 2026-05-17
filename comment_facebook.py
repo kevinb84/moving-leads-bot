@@ -1,6 +1,7 @@
 from playwright.sync_api import sync_playwright
 import time
 import random
+import os
 from utils.browser import get_browser_context, human_move
 from utils.logger import logger
 
@@ -11,8 +12,8 @@ def auto_comment_facebook(post_url, comment_text):
     logger.info(f"Attempting to smart-comment on: {post_url}")
     
     with sync_playwright() as p:
-        # We run this headless=False for testing so you can visually confirm it works!
-        browser, context = get_browser_context(p, headless=False)
+        is_github = bool(os.getenv("GITHUB_ACTIONS"))
+        browser, context = get_browser_context(p, headless=is_github)
         page = context.new_page()
         
         try:
@@ -28,7 +29,7 @@ def auto_comment_facebook(post_url, comment_text):
                 return False
                 
             # Click and type human-like
-            comment_box.first.click()
+            comment_box.first.dispatch_event("click")
             human_move(page)
             time.sleep(random.uniform(1, 2))
             

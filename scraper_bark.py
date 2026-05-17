@@ -3,53 +3,59 @@ from utils.browser import get_browser_context, random_delay, human_move, wait_fo
 from utils.logger import logger
 import random
 import time
+import os
+import json
 
 BARK_URLS = [
     "https://www.bark.com/en/ca/house-removals/",
     "https://www.bark.com/en/ca/office-removals/",
-    "https://www.bark.com/en/ca/man-and-van/"
+    "https://www.bark.com/en/ca/man-and-van/",
+    "https://www.bark.com/en/ca/long-distance-moving/",
+    "https://www.bark.com/en/ca/piano-moving/",
+    "https://www.bark.com/en/ca/senior-relocation/",
+    "https://www.bark.com/en/ca/junk-removal/",
+    "https://www.bark.com/en/ca/house-clearance/",
+    "https://www.bark.com/en/ca/office-clearance/"
 ]
 
 def scrape_bark_listings():
     """
-    Scrapes Bark.com for public moving requests in Canada.
+    Scrapes Bark.com for public moving requests in Canada using saved session cookies.
     """
     leads = []
+    cookie_path = 'cookies_bark.json'
     
     with sync_playwright() as p:
         browser, context = get_browser_context(p, headless=True)
+        
+        # Load Bark session if available
+        if os.path.exists(cookie_path):
+            try:
+                with open(cookie_path, 'r') as f:
+                    cookies = json.load(f)
+                    context.add_cookies(cookies)
+                logger.info("Loaded Bark session cookies.")
+            except Exception as e:
+                logger.error(f"Error loading Bark cookies: {e}")
+        
         page = context.new_page()
         
         for url in BARK_URLS:
             try:
                 logger.info(f"Scraping Bark category: {url}")
                 page.goto(url)
+                random_delay(3, 7)
                 
-                # Bark often lists jobs in a list or grid
-                # CSS Selectors for Bark leads (based on common patterns)
-                # Note: Bark usually requires login to see full details, 
-                # but sometimes previews are visible or we can find 'browse jobs' pages.
+                # Scroll to load more
+                for _ in range(3):
+                    page.mouse.wheel(0, 1000)
+                    time.sleep(2)
                 
-                # Take a debug screenshot to verify what's on the screen
-                slug = url.split('/')[-2] if url.endswith('/') else url.split('/')[-1]
-                screenshot_filename = f"logs/bark_debug_{slug}.png"
-                page.screenshot(path=screenshot_filename)
+                # Bark leads often have classes like 'public-lead-card' or 'lead-card'
+                job_cards = page.query_selector_all('.lead-card, .public-lead, a[href*="/projects/"]')
                 
-                html_content = page.content()
-                with open(f"logs/bark_debug_{slug}.html", "w", encoding="utf-8") as f:
-                    f.write(html_content)
-                
-                logger.info(f"Saved Bark debug screenshot to {screenshot_filename} and HTML to logs/bark_debug_{slug}.html")
+                logger.info(f"Bark found {len(job_cards)} potential leads on {url}")
 
-                # Check for job cards
-                # Bark leads often have classes like 'public-lead-card' or similar in browse mode
-                # Let's try to find potential card elements
-                job_cards = page.query_selector_all('.job-card, .public-lead, a[href*="/projects/"]')
-                
-                if not job_cards:
-                    # Try another approach: search for text snippets
-                    logger.info("No direct job cards found, looking for alternative structures.")
-                
                 for card in job_cards:
                     try:
                         text = card.inner_text().strip()
@@ -58,12 +64,15 @@ def scrape_bark_listings():
                             link = f"https://www.bark.com{link}"
                             
                         if text:
-                            leads.append({
-                                "text": text,
-                                "url": link or url,
-                                "source": "Bark.com",
-                                "status": "New"
-                            })
+                            lower_text = text.lower()
+                            # Prioritize Calgary/Alberta
+                            if any(loc in lower_text for loc in ["calgary", "alberta", "yyc", "airdrie", "okotoks", "edmonton"]):
+                                leads.append({
+                                    "text": text,
+                                    "url": link or url,
+                                    "source": "Bark.com (Canada)",
+                                    "status": "New"
+                                })
                     except:
                         continue
                         

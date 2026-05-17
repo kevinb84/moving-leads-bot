@@ -1,68 +1,83 @@
-import requests
-from bs4 import BeautifulSoup
+from playwright.sync_api import sync_playwright
+import time
+import random
+import os
 from utils.logger import logger
+from utils.browser import get_browser_context, human_move
 
 CRAIGSLIST_URLS = [
-    # Calgary & Edmonton "Wanted" categories searching for movers
+    "https://calgary.craigslist.org/search/wan?query=movers",
     "https://calgary.craigslist.org/search/wan?query=moving",
-    "https://edmonton.craigslist.org/search/wan?query=moving",
-    
-    # Calgary & Edmonton "Gigs" (people offering money for someone to move their stuff)
+    "https://calgary.craigslist.org/search/wan?query=junk",
+    "https://calgary.craigslist.org/search/wan?query=hauling",
+    "https://calgary.craigslist.org/search/lbg?query=movers",
     "https://calgary.craigslist.org/search/lbg?query=moving",
-    "https://edmonton.craigslist.org/search/lbg?query=moving"
+    "https://calgary.craigslist.org/search/lbg?query=junk",
+    "https://edmonton.craigslist.org/search/wan?query=movers",
+    "https://edmonton.craigslist.org/search/lbg?query=movers",
+    "https://edmonton.craigslist.org/search/wan?query=junk"
 ]
 
 def scrape_craigslist():
     leads = []
     
-    for url in CRAIGSLIST_URLS:
-        try:
-            logger.info(f"Scraping Craigslist: {url}")
-            headers = {
-                "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Safari/537.36"
-            }
-            response = requests.get(url, headers=headers)
-            response.raise_for_status()
-            
-            soup = BeautifulSoup(response.text, "html.parser")
-            
-            # Craigslist changed their HTML to have list items with a class of "cl-search-result"
-            # or specifically title elements
-            listings = soup.select("li.cl-search-result, li.result-row, div.result-info")
-            
-            logger.info(f"Craigslist found {len(listings)} potential listings.")
-            
-            for listing in listings:
-                try:
-                    title_elem = listing.select_one(".title, .result-title, .cl-app-anchor")
-                    if not title_elem:
+    with sync_playwright() as p:
+        is_github = bool(os.getenv("GITHUB_ACTIONS"))
+        browser, context = get_browser_context(p, headless=True)
+        page = context.new_page()
+        
+        for url in CRAIGSLIST_URLS:
+            try:
+                logger.info(f"Scraping Craigslist: {url}")
+                page.goto(url, timeout=30000)
+                time.sleep(random.uniform(4, 6))
+                human_move(page)
+                
+                # Modern Craigslist uses list items in results-page
+                listings = page.locator('li.cl-search-result, a.posting-title').all()
+                logger.info(f"Craigslist found {len(listings)} potential listings.")
+                
+                for listing in listings:
+                    try:
+                        title = listing.inner_text().strip()
+                        link = listing.get_attribute('href')
+                        
+                        if not link:
+                            # Search for <a> inside the li
+                            link_elem = listing.locator('a').first
+                            if link_elem.count() > 0:
+                                title = link_elem.inner_text().strip()
+                                link = link_elem.get_attribute('href')
+                            else: continue
+                            
+                        if not link: continue
+                        if not link.startswith("http"): continue
+                        
+                        lower_title = title.lower()
+                        # Keywords for people seeking help
+                        keywords = ["mover", "moving", "junk", "hauling", "disposal", "truck", "load", "pack", "help", "needed", "wanted"]
+                        disqualifiers = ["available", "service", "fully insured", "affordable"]
+                        
+                        if any(kw in lower_title for kw in keywords):
+                            if not any(dkw in lower_title for dkw in disqualifiers):
+                                leads.append({
+                                    "text": title,
+                                    "url": link,
+                                    "source": "Craigslist",
+                                    "status": "New"
+                                })
+                    except Exception:
                         continue
                         
-                    title = title_elem.text.strip()
-                    link = title_elem.get('href')
-                    
-                    if not link.startswith("http"):
-                        continue
-                        
-                    # Pre-filter
-                    lower_title = title.lower()
-                    if any(kw in lower_title for kw in ["mover", "moving", "truck", "load", "pack", "help"]):
-                        leads.append({
-                            "text": title,
-                            "url": link,
-                            "source": "Craigslist",
-                            "status": "New"
-                        })
-                except Exception as e:
-                    continue
-                    
-        except Exception as e:
-            logger.error(f"Failed to scrape Craigslist URL {url}: {e}")
-            
+            except Exception as e:
+                logger.error(f"Failed to scrape Craigslist URL {url}: {e}")
+                
+        browser.close()
+        
     return leads
 
 if __name__ == "__main__":
     res = scrape_craigslist()
     print(f"Craigslist leads found: {len(res)}")
-    for r in res:
-        print(r['text'], "-", r['url'])
+    for r in res[:10]:
+        print(f"[{r['source']}] {r['text'][:100]} - {r['url']}")

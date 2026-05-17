@@ -145,7 +145,12 @@ def qualify_with_keywords(text):
     lower_text = text.lower()
     
     # 4. Disqualification Filters (STRICT)
-    disqualifiers = ["just checking prices", "cheapest movers", "planning next month", "planning next year", "diy move", "truck rental", "selling my"]
+    disqualifiers = [
+        "just checking prices", "cheapest movers", "planning next month", 
+        "planning next year", "diy move", "truck rental", "selling my",
+        "professional movers", "moving services", "reliable moving", 
+        "book now", "call now for a quote", "junk removal services"
+    ]
     if any(dq in lower_text for dq in disqualifiers):
         return None
         

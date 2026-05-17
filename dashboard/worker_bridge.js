@@ -22,8 +22,8 @@ export async function fetchJobs() {
 
 export async function markJobDone() {
   const args = process.argv.slice(2);
-  const id = args[0];
-  const status = args[1];
+  const id = args[1];
+  const status = args[2];
   if (!id || !status) return;
   
   await insforge.database
@@ -32,10 +32,13 @@ export async function markJobDone() {
     .eq('id', id);
 }
 
-const command = process.argv[2];
-if (command === 'fetch') {
-  fetchJobs();
-} else if (command === 'update') {
-  // node worker_bridge.js update <id> <status>
-  markJobDone();
+async function run() {
+  const command = process.argv[2];
+  if (command === 'fetch') {
+    await fetchJobs();
+  } else if (command === 'update') {
+    await markJobDone();
+  }
 }
+
+run();

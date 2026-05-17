@@ -4,15 +4,25 @@ import time
 from utils.logger import logger
 
 REDDIT_SEARCH_URLS = [
-    # Calgary searches
-    "https://www.reddit.com/r/Calgary/search.json?q=movers&restrict_sr=1&sort=new",
-    "https://www.reddit.com/r/Calgary/search.json?q=moving+company&restrict_sr=1&sort=new",
-    "https://www.reddit.com/r/Calgary/search.json?q=recommend+movers&restrict_sr=1&sort=new",
+    # Calgary searches (PRIORITY)
+    "https://www.reddit.com/r/Calgary/search.json?q=movers&restrict_sr=1&sort=new&t=month",
+    "https://www.reddit.com/r/Calgary/search.json?q=moving+company&restrict_sr=1&sort=new&t=month",
+    "https://www.reddit.com/r/Calgary/search.json?q=junk+removal&restrict_sr=1&sort=new&t=month",
+    "https://www.reddit.com/r/Calgary/search.json?q=hauling+help&restrict_sr=1&sort=new&t=month",
+    "https://www.reddit.com/r/Calgary/search.json?q=trash+disposal&restrict_sr=1&sort=new&t=month",
+    "https://www.reddit.com/r/Calgary/search.json?q=recommend+movers&restrict_sr=1&sort=new&t=month",
+    "https://www.reddit.com/r/Calgary/search.json?q=moving+help&restrict_sr=1&sort=new&t=month",
+    "https://www.reddit.com/r/Calgary/search.json?q=relocating&restrict_sr=1&sort=new&t=month",
+    "https://www.reddit.com/r/Calgary/search.json?q=u-haul+help&restrict_sr=1&sort=new&t=month",
+    "https://www.reddit.com/r/Calgary/search.json?q=loading+help&restrict_sr=1&sort=new&t=month",
+    "https://www.reddit.com/r/Calgary/search.json?q=unloading+help&restrict_sr=1&sort=new&t=month",
     
     # Edmonton searches
-    "https://www.reddit.com/r/Edmonton/search.json?q=movers&restrict_sr=1&sort=new",
-    "https://www.reddit.com/r/Edmonton/search.json?q=moving+company&restrict_sr=1&sort=new",
-    "https://www.reddit.com/r/Edmonton/search.json?q=recommend+movers&restrict_sr=1&sort=new"
+    "https://www.reddit.com/r/Edmonton/search.json?q=movers&restrict_sr=1&sort=new&t=month",
+    "https://www.reddit.com/r/Edmonton/search.json?q=moving+company&restrict_sr=1&sort=new&t=month",
+    "https://www.reddit.com/r/Edmonton/search.json?q=junk+removal&restrict_sr=1&sort=new&t=month",
+    "https://www.reddit.com/r/Edmonton/search.json?q=recommend+movers&restrict_sr=1&sort=new&t=month",
+    "https://www.reddit.com/r/Edmonton/search.json?q=moving+help&restrict_sr=1&sort=new&t=month"
 ]
 
 def scrape_reddit():
@@ -50,14 +60,16 @@ def scrape_reddit():
                 
                 # Filter out very old posts (e.g., older than 30 days)
                 # 30 days = 2592000 seconds
-                if time.time() - created_utc > 2592000:
+                age = time.time() - created_utc
+                logger.info(f"Reddit post age: {age/86400:.1f} days")
+                if age > 2592000:
                     continue
                     
                 full_text = f"{title}\n{selftext}"
                 post_url = f"https://www.reddit.com{permalink}"
                 
-                # Pre-filter: looking for people asking for recommendations, not news articles
                 lower_text = full_text.lower()
+                logger.info(f"Reddit post title: {title}")
                 if any(kw in lower_text for kw in ["recommend", "looking for", "need", "best", "help"]):
                     leads.append({
                         "text": full_text.strip(),

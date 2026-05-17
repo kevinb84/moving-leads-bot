@@ -1,5 +1,5 @@
-app = "moving-leads-bot"
-primary_region = "yyz"
+app = 'lead-winter-sky-2871'
+primary_region = 'cdg'
 
 [build]
   dockerfile = "Dockerfile"
@@ -10,3 +10,9 @@ primary_region = "yyz"
 
 [env]
   PROCESSED_URLS_FILE_OVERRIDE = "/app/data/processed_urls.json"
+
+[[vm]]
+  memory = '1gb'
+  cpu_kind = 'shared'
+  cpus = 1
+  memory_mb = 1024
